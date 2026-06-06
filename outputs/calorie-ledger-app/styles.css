@@ -193,9 +193,10 @@ select {
   overflow-wrap: anywhere;
 }
 
+/* 这里已经帮你改成了 4 列，适配走势图标签 */
 .tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 5px;
   border-radius: 8px;
@@ -419,6 +420,16 @@ h2 {
 
 .negative {
   color: #ddffe9;
+}
+
+/* 新增的营养素面板网格布局 */
+.summary.macros {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary.macros article {
+  background: #f7faf7; 
+  min-height: 60px;
 }
 
 @media (max-width: 390px) {
