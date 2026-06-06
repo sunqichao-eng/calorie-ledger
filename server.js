@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 
 const PORT = Number(process.env.PORT || 3000);
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // 换成了我的专属 Key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 const ROOT = resolve(".");
 const OUTPUTS = join(ROOT, "outputs");
 const APP_DIR = join(OUTPUTS, "calorie-ledger-app");
@@ -21,7 +21,6 @@ const mime = {
   ".webp": "image/webp"
 };
 
-// 配合 Gemini 的 Schema 格式要求
 const geminiSchema = {
   type: "OBJECT",
   properties: {
@@ -68,7 +67,6 @@ async function analyzeMeal(imageDataUrl) {
     throw new Error("缺少 GEMINI_API_KEY。请在 Render 环境变量中配置。");
   }
 
-  // 提取 Base64 图片数据和格式，满足 Gemini 的图片读取要求
   const matches = imageDataUrl.match(/^data:(.+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
     throw new Error("图片格式错误，请重新上传。");
@@ -76,7 +74,8 @@ async function analyzeMeal(imageDataUrl) {
   const mimeType = matches[1];
   const base64Data = matches[2];
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+  // 这里把旧的 1.5 换成了最新的 gemini-2.5-flash
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -155,5 +154,5 @@ createServer(async (req, res) => {
   }
 }).listen(PORT, () => {
   console.log(`Calorie Ledger running at http://localhost:${PORT}`);
-  console.log(`Vision model: Gemini 1.5 Flash`);
+  console.log(`Vision model: Gemini 2.5 Flash`);
 });
