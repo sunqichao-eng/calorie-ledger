@@ -3,8 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 
 const PORT = Number(process.env.PORT || 3000);
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // 换成了我的专属 Key
 const ROOT = resolve(".");
 const OUTPUTS = join(ROOT, "outputs");
 const APP_DIR = join(OUTPUTS, "calorie-ledger-app");
@@ -22,34 +21,33 @@ const mime = {
   ".webp": "image/webp"
 };
 
-const schema = {
-  type: "object",
-  additionalProperties: false,
+// 配合 Gemini 的 Schema 格式要求
+const geminiSchema = {
+  type: "OBJECT",
   properties: {
     items: {
-      type: "array",
+      type: "ARRAY",
       items: {
-        type: "object",
-        additionalProperties: false,
+        type: "OBJECT",
         properties: {
-          name: { type: "string" },
-          amount_g: { type: "number" },
-          calories_per_100g: { type: "number" },
-          protein_per_100g: { type: "number" },
-          fat_per_100g: { type: "number" },
-          carbs_per_100g: { type: "number" },
-          calories: { type: "number" },
-          protein: { type: "number" },
-          fat: { type: "number" },
-          carbs: { type: "number" },
-          confidence: { type: "number" }
+          name: { type: "STRING" },
+          amount_g: { type: "NUMBER" },
+          calories_per_100g: { type: "NUMBER" },
+          protein_per_100g: { type: "NUMBER" },
+          fat_per_100g: { type: "NUMBER" },
+          carbs_per_100g: { type: "NUMBER" },
+          calories: { type: "NUMBER" },
+          protein: { type: "NUMBER" },
+          fat: { type: "NUMBER" },
+          carbs: { type: "NUMBER" },
+          confidence: { type: "NUMBER" }
         },
         required: ["name", "amount_g", "calories_per_100g", "protein_per_100g", "fat_per_100g", "carbs_per_100g", "calories", "protein", "fat", "carbs", "confidence"]
       }
     },
-    total_calories: { type: "number" },
-    confidence: { type: "number" },
-    notes: { type: "string" }
+    total_calories: { type: "NUMBER" },
+    confidence: { type: "NUMBER" },
+    notes: { type: "STRING" }
   },
   required: ["items", "total_calories", "confidence", "notes"]
 };
@@ -65,73 +63,50 @@ async function readJson(req) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-function extractOutputText(response) {
-  if (typeof response.output_text === "string") return response.output_text;
-  const parts = [];
-  for (const item of response.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" && content.text) parts.push(content.text);
-    }
-  }
-  return parts.join("\n");
-}
-
 async function analyzeMeal(imageDataUrl) {
-  if (!OPENAI_API_KEY) {
-    throw new Error("Missing OPENAI_API_KEY. Set it before starting the server.");
+  if (!GEMINI_API_KEY) {
+    throw new Error("缺少 GEMINI_API_KEY。请在 Render 环境变量中配置。");
   }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  // 提取 Base64 图片数据和格式，满足 Gemini 的图片读取要求
+  const matches = imageDataUrl.match(/^data:(.+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error("图片格式错误，请重新上传。");
+  }
+  const mimeType = matches[1];
+  const base64Data = matches[2];
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "authorization": `Bearer ${OPENAI_API_KEY}`
-    },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
-      input: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "input_text",
-              text: "你是一个专业的营养师。请识别图片中的食物，并估算其重量(g)、每100克的卡路里以及蛋白质、脂肪和碳水化合物含量。返回严谨的JSON数据。If unsure, use broad common serving estimates."
-            }
-          ]
-        },
+      systemInstruction: {
+        parts: [{ text: "你是一个专业的营养师。请识别图片中的食物，并估算其重量(g)、每100克的卡路里以及蛋白质、脂肪和碳水化合物含量。返回严谨的JSON数据。如果拿不准，请使用常见的基础分量进行估算。" }]
+      },
+      contents: [
         {
           role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: "识别图片中的食物，估算重量和三大营养素。仅返回符合 JSON schema 的数据。"
-            },
-            {
-              type: "input_image",
-              image_url: imageDataUrl,
-              detail: "high"
-            }
+          parts: [
+            { text: "识别图片中的食物，估算重量和三大营养素。仅返回符合 JSON schema 的数据。" },
+            { inline_data: { mime_type: mimeType, data: base64Data } }
           ]
         }
       ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "meal_calorie_estimate",
-          schema,
-          strict: true
-        }
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: geminiSchema
       }
     })
   });
 
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error?.message || `OpenAI API error: ${response.status}`);
+    throw new Error(payload.error?.message || `Gemini API Error: ${response.status}`);
   }
 
-  const text = extractOutputText(payload);
-  if (!text) throw new Error("The model returned no structured text.");
+  const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("AI 没有返回有效数据。");
+  
   return JSON.parse(text);
 }
 
@@ -160,7 +135,7 @@ createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/api/analyze-meal") {
       const body = await readJson(req);
       if (!body.imageDataUrl || !body.imageDataUrl.startsWith("data:image/")) {
-        sendJson(res, 400, { error: "imageDataUrl is required." });
+        sendJson(res, 400, { error: "图片数据无效。" });
         return;
       }
       const result = await analyzeMeal(body.imageDataUrl);
@@ -180,5 +155,5 @@ createServer(async (req, res) => {
   }
 }).listen(PORT, () => {
   console.log(`Calorie Ledger running at http://localhost:${PORT}`);
-  console.log(`Vision model: ${OPENAI_MODEL}`);
+  console.log(`Vision model: Gemini 1.5 Flash`);
 });
