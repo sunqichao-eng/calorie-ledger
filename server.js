@@ -4,7 +4,7 @@ import { extname, join, resolve } from "node:path";
 
 const PORT = Number(process.env.PORT || 3000);
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.5";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 const ROOT = resolve(".");
 const OUTPUTS = join(ROOT, "outputs");
 const APP_DIR = join(OUTPUTS, "calorie-ledger-app");
@@ -35,10 +35,16 @@ const schema = {
           name: { type: "string" },
           amount_g: { type: "number" },
           calories_per_100g: { type: "number" },
+          protein_per_100g: { type: "number" },
+          fat_per_100g: { type: "number" },
+          carbs_per_100g: { type: "number" },
           calories: { type: "number" },
+          protein: { type: "number" },
+          fat: { type: "number" },
+          carbs: { type: "number" },
           confidence: { type: "number" }
         },
-        required: ["name", "amount_g", "calories_per_100g", "calories", "confidence"]
+        required: ["name", "amount_g", "calories_per_100g", "protein_per_100g", "fat_per_100g", "carbs_per_100g", "calories", "protein", "fat", "carbs", "confidence"]
       }
     },
     total_calories: { type: "number" },
@@ -89,7 +95,7 @@ async function analyzeMeal(imageDataUrl) {
           content: [
             {
               type: "input_text",
-              text: "You estimate foods from meal photos. Return cautious nutrition estimates only. If unsure, use broad common serving estimates and lower confidence."
+              text: "你是一个专业的营养师。请识别图片中的食物，并估算其重量(g)、每100克的卡路里以及蛋白质、脂肪和碳水化合物含量。返回严谨的JSON数据。If unsure, use broad common serving estimates."
             }
           ]
         },
@@ -98,7 +104,7 @@ async function analyzeMeal(imageDataUrl) {
           content: [
             {
               type: "input_text",
-              text: "Identify the food items in this meal photo. Estimate each item's weight in grams, calories per 100g, and total calories. Use Chinese food names when appropriate. Return only data that matches the JSON schema."
+              text: "识别图片中的食物，估算重量和三大营养素。仅返回符合 JSON schema 的数据。"
             },
             {
               type: "input_image",
