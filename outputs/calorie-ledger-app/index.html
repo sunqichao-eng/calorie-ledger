@@ -12,6 +12,7 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.png">
   <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app">
@@ -45,16 +46,23 @@
       </section>
 
       <section class="summary">
-        <article><span>摄入</span><strong id="intake">0</strong></article>
-        <article><span>消耗</span><strong id="totalBurn">0</strong></article>
-        <article><span>BMR</span><strong id="bmr">0</strong></article>
-        <article><span>运动</span><strong id="exerciseBurn">0</strong></article>
+        <article><span>摄入(kcal)</span><strong id="intake">0</strong></article>
+        <article><span>消耗(kcal)</span><strong id="totalBurn">0</strong></article>
+        <article><span>BMR(kcal)</span><strong id="bmr">0</strong></article>
+        <article><span>运动(kcal)</span><strong id="exerciseBurn">0</strong></article>
+      </section>
+
+      <section class="summary macros">
+        <article><span>蛋白质(g)</span><strong id="totalProtein">0</strong></article>
+        <article><span>脂肪(g)</span><strong id="totalFat">0</strong></article>
+        <article><span>碳水(g)</span><strong id="totalCarbs">0</strong></article>
       </section>
 
       <nav class="tabs" aria-label="功能">
         <button class="tab active" type="button" data-panel="mealPanel">饮食</button>
         <button class="tab" type="button" data-panel="exercisePanel">运动</button>
         <button class="tab" type="button" data-panel="profilePanel">身体</button>
+        <button class="tab" type="button" data-panel="chartPanel">走势</button>
       </nav>
 
       <section id="mealPanel" class="panel active">
@@ -66,9 +74,9 @@
             <span>拍照 / 上传</span>
           </div>
         </div>
-        <button id="analyzeMeal" class="ai-btn" type="button">AI 识别并加入</button>
-
-        <div class="preset-row">
+        <button id="analyzeMeal" class="ai-btn" type="button">AI 识别并计算热量与营养素</button>
+        
+        <div class="preset-row" style="margin-top: 14px;">
           <label>
             <span>食物库</span>
             <select id="foodPreset"></select>
@@ -77,18 +85,12 @@
         </div>
 
         <div class="form-grid meal-grid">
-          <label>
-            <span>食物</span>
-            <input id="foodName" placeholder="鸡胸肉">
-          </label>
-          <label>
-            <span>份量 g/ml</span>
-            <input id="foodAmount" type="number" inputmode="decimal" min="1" value="100">
-          </label>
-          <label>
-            <span>kcal / 100g</span>
-            <input id="foodCal" type="number" inputmode="decimal" min="0" value="116">
-          </label>
+          <label><span>食物名称</span><input id="foodName" placeholder="如: 鸡胸肉"></label>
+          <label><span>份量(g)</span><input id="foodAmount" type="number" inputmode="decimal" min="1" value="100"></label>
+          <label><span>总热量(kcal)</span><input id="foodCal" type="number" inputmode="decimal" min="0" value="0"></label>
+          <label><span>蛋白质(g)</span><input id="foodProtein" type="number" inputmode="decimal" min="0" value="0"></label>
+          <label><span>脂肪(g)</span><input id="foodFat" type="number" inputmode="decimal" min="0" value="0"></label>
+          <label><span>碳水(g)</span><input id="foodCarbs" type="number" inputmode="decimal" min="0" value="0"></label>
         </div>
         <button id="addMeal" class="primary" type="button">加入饮食</button>
       </section>
@@ -147,6 +149,13 @@
               <option value="1.75">高活动</option>
             </select>
           </label>
+        </div>
+      </section>
+
+      <section id="chartPanel" class="panel">
+        <div class="section-title"><h2>最近 7 天热量盈余/缺口走势</h2></div>
+        <div style="background: #fff; padding: 10px; border-radius: 8px;">
+          <canvas id="weeklyChart"></canvas>
         </div>
       </section>
 
