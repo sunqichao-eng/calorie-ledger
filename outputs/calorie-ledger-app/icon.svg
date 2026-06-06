@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#10231b"/>
+  <circle cx="256" cy="252" r="144" fill="#f4f6f0"/>
+  <path d="M158 255c0-54 44-98 98-98s98 44 98 98-44 98-98 98-98-44-98-98Z" fill="#1e8a5a"/>
+  <path d="M216 143c-18-31-8-65 21-86 33 24 44 64 20 98-15-10-27-14-41-12Z" fill="#b97814"/>
+  <path d="M171 252h170" stroke="#f4f6f0" stroke-width="34" stroke-linecap="round"/>
+  <path d="M256 167v170" stroke="#f4f6f0" stroke-width="34" stroke-linecap="round"/>
+  <text x="256" y="438" text-anchor="middle" font-family="Arial, sans-serif" font-size="62" font-weight="800" fill="#f4f6f0">kcal</text>
+</svg>
